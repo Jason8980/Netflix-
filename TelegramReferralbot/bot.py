@@ -1,22 +1,28 @@
-import os, random, sqlite3
-from telegram import Update, InputFile
+import os
+import random
+import sqlite3
+from telegram import Update
 from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes
 
 # ---------------- CONFIG ----------------
-BOT_TOKEN = os.environ.get("8417981212:AAEM39oVm2YJvXPAJRlsMaqM_VblkwBhZQ0")  # Environment variable for safety
-CHANNEL_INVITE_LINK = "https://t.me/+LD4fserLHFMxMmQ1"  # Your private channel link
-FILE_PATH = "Moviebox MD.apk"  # Your APK
-REF_TARGET = 3  # Number of referrals required
+BOT_TOKEN = os.environ.get("BOT_TOKEN")  # Set this in Render
+CHANNEL_USERNAME = "@freemovieappp"       # Your channel username (with @)
+APK_MESSAGE_ID = 2                        # Message ID of your APK in the channel
+REF_TARGET = 3                             # Number of referrals required
 # ----------------------------------------
 
 # ----------- DATABASE SETUP ------------
 conn = sqlite3.connect("referrals.db", check_same_thread=False)
 c = conn.cursor()
+
+# Users table
 c.execute('''CREATE TABLE IF NOT EXISTS users
              (user_id INTEGER PRIMARY KEY,
               ref_code TEXT,
               referrals INTEGER,
               referred_by TEXT)''')
+
+# Referral history table
 c.execute('''CREATE TABLE IF NOT EXISTS referrals
              (referrer_id INTEGER,
               referee_id INTEGER,
@@ -43,7 +49,8 @@ async def process_referral(update: Update, context: ContextTypes.DEFAULT_TYPE, r
     if not ref_user or ref_user[0] == update.message.from_user.id:
         return
     # Check if already counted
-    c.execute("SELECT * FROM referrals WHERE referrer_id=? AND referee_id=?", (ref_user[0], update.message.from_user.id))
+    c.execute("SELECT * FROM referrals WHERE referrer_id=? AND referee_id=?",
+              (ref_user[0], update.message.from_user.id))
     if c.fetchone():
         return
     # Count referral
@@ -51,10 +58,15 @@ async def process_referral(update: Update, context: ContextTypes.DEFAULT_TYPE, r
     c.execute("UPDATE users SET referrals=? WHERE user_id=?", (new_count, ref_user[0]))
     c.execute("INSERT INTO referrals VALUES (?, ?)", (ref_user[0], update.message.from_user.id))
     conn.commit()
-    # Send progress or file
+    # Send progress or APK
     if new_count >= REF_TARGET:
-        await context.bot.send_document(ref_user[0], InputFile(FILE_PATH),
-            caption="🎉 Congrats! You unlocked your APK after 3 referrals.")
+        try:
+            await context.bot.forward_message(chat_id=ref_user[0],
+                                              from_chat_id=CHANNEL_USERNAME,
+                                              message_id=APK_MESSAGE_ID)
+            await context.bot.send_message(ref_user[0], "🎉 Congrats! You unlocked your APK after 3 referrals.")
+        except:
+            await context.bot.send_message(ref_user[0], "❌ Could not send APK. Make sure your bot is admin in the channel.")
     else:
         await context.bot.send_message(ref_user[0], f"🔔 Progress: {new_count}/{REF_TARGET} referrals done.")
 
@@ -65,7 +77,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     ref_by = args[0] if args else None
 
     # Step 1: Ask user to join private channel
-    await update.message.reply_text(f"🚫 You must join the private channel first!\nJoin here: {CHANNEL_INVITE_LINK}")
+    await update.message.reply_text(f"🚫 You must join the private channel first!\nJoin here: {CHANNEL_USERNAME}")
     
     # Step 2: Process referral (counts only if user returns after joining)
     await process_referral(update, context, ref_by)
@@ -79,6 +91,8 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     )
 
 # ----------- RUN BOT -----------
-app = ApplicationBuilder().token(BOT_TOKEN).build()
-app.add_handler(CommandHandler("start", start))
-app.run_polling()
+if __name__ == "__main__":
+    app = ApplicationBuilder().token(BOT_TOKEN).build()
+    app.add_handler(CommandHandler("start", start))
+    print("Bot is running...")
+    app.run_polling()
