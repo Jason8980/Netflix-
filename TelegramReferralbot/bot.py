@@ -3,10 +3,10 @@ from telegram import Update, InputFile
 from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes
 
 # ---------------- CONFIG ----------------
-BOT_TOKEN = os.environ.get("BOT_TOKEN")  # Token from BotFather
-CHANNEL_INVITE_LINK = "https://t.me/+LD4fserLHFMxMmQ1"  # Your private channel
-FILE_PATH = "myfile.pdf"  # File to send
-REF_TARGET = 3  # Number of referrals needed
+BOT_TOKEN = os.environ.get("8417981212:AAEM39oVm2YJvXPAJRlsMaqM_VblkwBhZQ0")  # Environment variable for safety
+CHANNEL_INVITE_LINK = "https://t.me/+LD4fserLHFMxMmQ1"  # Your private channel link
+FILE_PATH = "Moviebox MD.apk"  # Your APK
+REF_TARGET = 3  # Number of referrals required
 # ----------------------------------------
 
 # ----------- DATABASE SETUP ------------
@@ -54,7 +54,7 @@ async def process_referral(update: Update, context: ContextTypes.DEFAULT_TYPE, r
     # Send progress or file
     if new_count >= REF_TARGET:
         await context.bot.send_document(ref_user[0], InputFile(FILE_PATH),
-            caption="🎉 Congrats! You unlocked your file after 3 referrals.")
+            caption="🎉 Congrats! You unlocked your APK after 3 referrals.")
     else:
         await context.bot.send_message(ref_user[0], f"🔔 Progress: {new_count}/{REF_TARGET} referrals done.")
 
@@ -75,7 +75,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(
         f"👋 Welcome!\n\nYour referral link:\n"
         f"https://t.me/{context.bot.username}?start={ref_code}\n\n"
-        f"Share with 3 friends. Once 3 people start using your link, you'll get your file!"
+        f"Share with 3 friends. Once 3 people start using your link, you'll get your APK!"
     )
 
 # ----------- RUN BOT -----------
